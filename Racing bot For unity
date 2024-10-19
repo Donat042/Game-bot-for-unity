@@ -1,0 +1,54 @@
+using UnityEngine;
+
+public class RaceBot : MonoBehaviour
+{
+    public float speed = 10f; // Скорость бота
+    public float turnSpeed = 100f; // Скорость поворота
+    public float detectionDistance = 5f; // Дистанция обнаружения препятствий
+    public Transform[] waypoints; // Контейнер для точек маршрута
+
+    private int currentWaypointIndex = 0;
+
+    void Update()
+    {
+        Move();
+        AvoidObstacles();
+        CheckWaypoint();
+    }
+
+    void Move()
+    {
+        // Движение вперед
+        transform.Translate(Vector3.forward * speed * Time.deltaTime);
+    }
+
+    void AvoidObstacles()
+    {
+        // Проверка на препятствия впереди
+        RaycastHit hit;
+        if (Physics.Raycast(transform.position, transform.forward, out hit, detectionDistance))
+        {
+            // Если препятствие найдено, поворачиваем
+            if (hit.distance < detectionDistance)
+            {
+                // Поворот влево или вправо
+                Vector3 avoidanceDirection = Vector3.Cross(hit.normal, Vector3.up);
+                transform.rotation = Quaternion.Slerp(transform.rotation, Quaternion.LookRotation(avoidanceDirection), turnSpeed * Time.deltaTime);
+            }
+        }
+    }
+
+    void CheckWaypoint()
+    {
+        // Проверка, достигли ли мы текущей точки маршрута
+        if (Vector3.Distance(transform.position, waypoints[currentWaypointIndex].position) < 1f)
+        {
+            currentWaypointIndex = (currentWaypointIndex + 1) % waypoints.Length; // Переход к следующей точке
+        }
+
+        // Поворачиваем в сторону следующей точки
+        Vector3 direction = waypoints[currentWaypointIndex].position - transform.position;
+        Quaternion targetRotation = Quaternion.LookRotation(direction);
+        transform.rotation = Quaternion.Slerp(transform.rotation, targetRotation, turnSpeed * Time.deltaTime);
+    }
+}
